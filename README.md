@@ -17,6 +17,9 @@ classDiagram
         +fetch() List~data~
     }
 
+    DataSource <|-- DBTableSource
+    DataSource <|-- XMLSource
+
     class DBTableSource {
         +fetch() List~data~
     }
@@ -28,6 +31,9 @@ classDiagram
     class Normalizer {
         +normalize(data) List~Product~
     }
+
+    Normalizer <|-- DBTableNormalizer
+    Normalizer <|-- XMLNormalizer
 
     class DBTableNormalizer {
         +normalize(data) List~Product~
@@ -42,8 +48,27 @@ classDiagram
         +createDatasource()
     }
 
-    class DBTableProductFactory
-    class XMLProductFactory
+    ProductFactory <|-- DBTableProductFactory
+    ProductFactory <|-- XMLProductFactory
+
+    class DBTableProductFactory {
+        +createNormalizer()
+        +createDatasource()
+    }
+    class XMLProductFactory {
+        +createNormalizer()
+        +createDatasource()
+    }
+    
+    class ProductAggregator {
+        +execute(List~Product~ products) List~Product~
+    }
+    
+    class MinimumPriceProductAggregator {
+        +execute(List~Product~ products) List~Product~
+    }
+    
+    ProductAggregator <|-- MinimumPriceProductAggregator
 
     class ProductList {
         +execute() List~Product~
@@ -51,19 +76,14 @@ classDiagram
     }
 
     Normalizer *-- Product
-    Normalizer <|-- DBTableNormalizer
-    Normalizer <|-- XMLNormalizer
-    DataSource <|-- DBTableSource
-    DataSource <|-- XMLSource
     DBTableProductFactory *-- DBTableSource
     DBTableProductFactory *-- DBTableNormalizer
     XMLProductFactory *-- XMLSource
     XMLProductFactory *-- XMLNormalizer
-    ProductFactory <|-- DBTableProductFactory
-    ProductFactory <|-- XMLProductFactory
     ProductList --> "*" ProductFactory
     ProductList --> DataSource
     ProductList --> Normalizer
+    ProductList --> ProductAggregator
 ```
 
 ### Controller
@@ -109,9 +129,10 @@ flowchart TD
     B -->|Cache Miss| D[Create DataSource and Normalizer using Factory]
     D --> E[Fetch Products from Data Sources]
     E --> F[Normalize Data with Appropriate Normalizer]
-    F --> G[Update Cache]
-    G --> H[Prepare Products for Display]
-    C --> H
-    H --> I[Render Result Page]
-    I --> J[End]
+    F --> G[Aggregate Products]
+    G --> H[Update Cache]
+    H --> I[Prepare Products for Display]
+    C --> I
+    I --> J[Render Result Page]
+    J --> K[End]
 ```
